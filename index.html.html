@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoAssets Security Service (CASS)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cass: {
+                            bg: '#070a0f',
+                            card: '#0f172a',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            cyan: '#00f2fe',
+                            blue: '#3b82f6',
+                            green: '#10b981',
+                            red: '#ef4444'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #070a0f;
+            color: #f8fafc;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 25px -5px rgba(0, 242, 254, 0.25);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070a0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cass-cyan selection:text-black">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-white/10 bg-cass-bg/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cass-cyan to-cass-blue flex items-center justify-center text-black font-extrabold text-xl shadow-lg shadow-cass-cyan/20">
+                    <i class="fa-solid fa-shield-halved text-slate-950"></i>
+                </div>
+                <div>
+                    <span class="text-lg font-bold tracking-tight text-white block leading-tight">CryptoAssets <span class="text-cass-cyan">Security</span></span>
+                    <span class="text-[10px] text-gray-400 font-mono tracking-wider uppercase block">Escrow & Verification Service</span>
+                </div>
+            </div>
+            
+            <!-- User Control Area (Header) -->
+            <div id="headerUserArea" class="hidden flex items-center space-x-4">
+                <div class="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-white/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-cass-green animate-pulse"></div>
+                    <span id="displayHeaderUser" class="text-xs font-semibold text-gray-200">User</span>
+                </div>
+                <button onclick="logout()" class="text-gray-400 hover:text-white text-xs font-semibold transition-colors px-3 py-1.5 rounded-xl hover:bg-slate-800 border border-transparent hover:border-white/10 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Exit Portal</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        
+        <!-- SECTION 1: AUTH & INCIDENT VERIFICATION SCREEN -->
+        <div id="loginScreen" class="w-full max-w-md glass-panel p-8 rounded-3xl shadow-2xl relative overflow-hidden my-auto glow-cyan">
+            <div class="absolute -top-16 -right-16 w-36 h-36 bg-cass-cyan/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cass-cyan/10 border border-cass-cyan/20 text-cass-cyan text-xs font-mono font-medium mb-3">
+                    <i class="fa-solid fa-lock text-[10px]"></i>
+                    <span>Secure Resolution Portal</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">CASS Access Portal</h1>
+                <p class="text-gray-400 text-xs mt-2">Enter your designated Incident Authorization ID to inspect case holdings</p>
+            </div>
+
+            <!-- Error Notification Banner -->
+            <div id="loginError" class="hidden mb-5 p-3.5 rounded-xl bg-cass-red/10 border border-cass-red/30 text-cass-red text-xs flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-sm shrink-0"></i>
+                <span id="loginErrorMsg">Invalid Incident ID. Required format: #SEC-82931-TX</span>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-5">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Account Holder Name</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-500">
+                            <i class="fa-solid fa-user-shield text-xs"></i>
+                        </span>
+                        <input type="text" id="inputUsername" required placeholder="Enter full name" 
+                            class="w-full bg-slate-950/80 border border-white/10 focus:border-cass-cyan rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none transition-all text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Incident Authorization ID</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-500">
+                            <i class="fa-solid fa-key text-xs"></i>
+                        </span>
+                        <input type="text" id="inputIncidentId" required placeholder="#SEC-82931-TX" 
+                            class="w-full bg-slate-950/80 border border-white/10 focus:border-cass-cyan rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none transition-all text-sm font-mono uppercase">
+                    </div>
+                    <span class="text-[10px] text-gray-500 mt-1.5 block flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info"></i> Format: #SEC-82931-TX
+                    </span>
+                </div>
+
+                <button type="submit" 
+                    class="w-full bg-gradient-to-r from-cass-cyan to-cass-blue hover:opacity-95 text-slate-950 font-extrabold py-3.5 px-4 rounded-xl shadow-lg shadow-cass-cyan/20 transition-all transform active:scale-[0.99] flex items-center justify-center space-x-2 text-sm mt-3">
+                    <span>Authenticate & Login</span>
+                    <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- SECTION 2: MAIN DASHBOARD (HIDDEN DEFAULT) -->
+        <div id="dashboardScreen" class="w-full max-w-6xl space-y-6 hidden">
+            
+            <!-- Welcome Header -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between glass-panel p-6 rounded-3xl gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold uppercase tracking-widest text-cass-cyan">Case Overview</span>
+                        <span class="px-2 py-0.5 rounded-md bg-cass-green/10 text-cass-green text-[10px] font-bold border border-cass-green/20">Verified & Released</span>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-white mt-1">
+                        Account Holder: <span id="welcomeName" class="text-transparent bg-clip-text bg-gradient-to-r from-cass-cyan to-cass-blue">User</span>
+                    </h2>
+                    <p class="text-gray-400 text-xs mt-1 flex items-center gap-2">
+                        <span>Incident Hash: <span id="displayIncidentId" class="text-gray-200 font-mono font-bold">#SEC-82931-TX</span></span>
+                        <span>&bull;</span>
+                        <span>Escrow Vault: <span class="text-gray-300 font-mono">CASS-VAULT-092</span></span>
+                    </p>
+                </div>
+
+                <div class="flex items-center space-x-3 w-full md:w-auto">
+                    <button onclick="openModal('withdraw')" class="flex-1 md:flex-initial bg-gradient-to-r from-cass-cyan to-cass-blue hover:opacity-90 text-slate-950 font-bold px-5 py-2.5 rounded-xl transition-all text-xs flex items-center justify-center space-x-2 shadow-lg shadow-cass-cyan/10">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Initiate Transfer</span>
+                    </button>
+                    <button onclick="openModal('verify')" class="flex-1 md:flex-initial bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all text-xs flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-certificate text-cass-cyan"></i>
+                        <span>View Certificate</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Balance & Audit Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Main Escrow Balance Card -->
+                <div class="lg:col-span-2 glass-panel p-7 rounded-3xl relative overflow-hidden flex flex-col justify-between glow-cyan">
+                    <div class="absolute -bottom-12 -right-12 w-56 h-56 bg-cass-cyan/5 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Total Recovered Reserve Balance</span>
+                            <span class="bg-cass-green/10 text-cass-green text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border border-cass-green/20">
+                                <i class="fa-solid fa-circle-check text-xs"></i> 100% Backed Escrow
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-baseline space-x-3 my-2">
+                            <h3 id="displayBalance" class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight font-mono">87,826.00</h3>
+                            <span class="text-lg sm:text-2xl font-bold text-cass-cyan">USDT</span>
+                        </div>
+                        <p class="text-gray-400 text-xs">Estimated Valuation: ≈ €<span id="eurBalance" class="font-mono">80,799.92</span> EUR &bull; $87,826.00 USD</p>
+                    </div>
+
+                    <!-- Breakdown / Asset Pool Mini Bar -->
+                    <div class="mt-8 pt-6 border-t border-white/10 space-y-3">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400 font-medium">Asset Reserve Allocation</span>
+                            <span class="text-gray-200 font-mono">100% USDT Stability Vault</span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-white/10 flex">
+                            <div class="bg-gradient-to-r from-cass-cyan to-cass-blue h-full rounded-full w-full"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
+                            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                <span class="text-[10px] text-gray-400 block uppercase">Vault Status</span>
+                                <span class="text-xs font-bold text-cass-green mt-0.5 block">Unlocked</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                <span class="text-[10px] text-gray-400 block uppercase">KYC Clearance</span>
+                                <span class="text-xs font-bold text-cass-cyan mt-0.5 block">Level 3 Passed</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                <span class="text-[10px] text-gray-400 block uppercase">Network Protocol</span>
+                                <span class="text-xs font-bold text-gray-200 font-mono mt-0.5 block">TRC20 / ERC20</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compliance & Security Status -->
+                <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between space-y-6">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 flex items-center justify-between">
+                            <span>Compliance Checklist</span>
+                            <i class="fa-solid fa-shield-cat text-cass-cyan"></i>
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-slate-950/50 rounded-2xl border border-white/5">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-7 h-7 rounded-lg bg-cass-green/10 text-cass-green flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-check"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-gray-300">Identity Verification</span>
+                                </div>
+                                <span class="text-[11px] font-bold text-cass-green">Confirmed</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-3 bg-slate-950/50 rounded-2xl border border-white/5">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-7 h-7 rounded-lg bg-cass-green/10 text-cass-green flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-check"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-gray-300">Proof of Funds</span>
+                                </div>
+                                <span class="text-[11px] font-bold text-cass-green">Verified</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-3 bg-slate-950/50 rounded-2xl border border-white/5">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-7 h-7 rounded-lg bg-cass-cyan/10 text-cass-cyan flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-lock"></i>
+                                    </div>
+                                    <span class="text-xs font-medium text-gray-300">Multi-Sig Escrow</span>
+                                </div>
+                                <span class="text-[11px] font-bold text-cass-cyan">Ready</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-950/80 rounded-2xl border border-white/5">
+                        <div class="flex items-center space-x-2 text-xs font-semibold text-gray-200 mb-1">
+                            <i class="fa-solid fa-bell text-cass-cyan"></i>
+                            <span>Audit Clearance Note</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Case <span class="text-gray-200 font-mono">#SEC-82931-TX</span> has passed all security protocol checks. Assets are cleared for transfer to nominated wallet addresses.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Audit Trail -->
+            <div class="glass-panel p-6 rounded-3xl">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h4 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-file-contract text-cass-cyan"></i>
+                            <span>Escrow Ledger & Resolution History</span>
+                        </h4>
+                        <p class="text-xs text-gray-400 mt-0.5">Immutable audit record for Incident #SEC-82931-TX</p>
+                    </div>
+                    <span class="text-xs text-gray-400 font-mono bg-slate-950 px-3 py-1 rounded-lg border border-white/5">Status: FINALIZED</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-gray-400">
+                        <thead class="bg-slate-950 uppercase text-[10px] tracking-wider text-gray-500 border-b border-white/10">
+                            <tr>
+                                <th class="p-3.5">Event Type</th>
+                                <th class="p-3.5">Amount</th>
+                                <th class="p-3.5">Asset</th>
+                                <th class="p-3.5">Time Stamp</th>
+                                <th class="p-3.5 text-right">Verification</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txHistoryTable" class="divide-y divide-white/5 text-gray-300 font-mono">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-4 bg-cass-bg/60">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-gray-500">
+            CryptoAssets Security Service &bull; Official Incident Resolution Dashboard &bull; Case ID: #SEC-82931-TX
+        </div>
+    </footer>
+
+    <!-- ACTION MODAL -->
+    <div id="actionModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 w-full max-w-md rounded-3xl p-6 relative shadow-2xl border border-white/10">
+            <button onclick="closeModal()" class="absolute top-5 right-5 text-gray-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <h3 id="modalTitle" class="text-lg font-bold text-white mb-4">Transfer Simulation</h3>
+            
+            <div id="modalBody" class="space-y-4">
+                <form onsubmit="handleModalSubmit(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Destination USDT Wallet Address</label>
+                        <input type="text" required placeholder="T..." value="TX9qZ8vN2k7xM3L1P4R6Y8Q5W0E2R4T6Y" 
+                            class="w-full bg-slate-950 border border-white/10 focus:border-cass-cyan rounded-xl p-3 text-white focus:outline-none text-xs font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Transfer Amount (USDT)</label>
+                        <input type="number" id="modalAmount" min="1" step="any" required placeholder="87826.00" value="87826.00"
+                            class="w-full bg-slate-950 border border-white/10 focus:border-cass-cyan rounded-xl p-3 text-white focus:outline-none text-sm font-mono">
+                    </div>
+
+                    <div class="p-3 bg-cass-cyan/10 border border-cass-cyan/20 rounded-xl text-xs text-cass-cyan flex items-start space-x-2">
+                        <i class="fa-solid fa-shield-halved text-sm mt-0.5"></i>
+                        <span>This request will simulate an authorized release from Escrow Vault CASS-VAULT-092.</span>
+                    </div>
+
+                    <button type="submit" 
+                        class="w-full bg-gradient-to-r from-cass-cyan to-cass-blue text-slate-950 font-bold py-3.5 rounded-xl transition-all text-xs shadow-lg shadow-cass-cyan/20 mt-2">
+                        Execute Simulated Transfer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        let currentUser = '';
+        const REQUIRED_INCIDENT_ID = '#SEC-82931-TX';
+        let currentBalance = 87826.00;
+        let transactions = [];
+
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const incidentInput = document.getElementById('inputIncidentId').value.trim();
+            const usernameInput = document.getElementById('inputUsername').value.trim();
+            const errorBox = document.getElementById('loginError');
+
+            if (incidentInput.toUpperCase() !== REQUIRED_INCIDENT_ID) {
+                errorBox.classList.remove('hidden');
+                document.getElementById('loginErrorMsg').textContent = `Invalid Incident ID. Expected: ${REQUIRED_INCIDENT_ID}`;
+                return;
+            }
+
+            if (!usernameInput) return;
+
+            errorBox.classList.add('hidden');
+            currentUser = usernameInput;
+            currentBalance = 87826.00;
+            
+            transactions = [
+                {
+                    type: 'Vault Recovery Deposit',
+                    amount: `+87,826.00 USDT`,
+                    asset: 'USDT (TRC20)',
+                    time: new Date().toLocaleTimeString(),
+                    status: 'Audited & Cleared',
+                    statusClass: 'text-cass-green'
+                },
+                {
+                    type: 'Case #SEC-82931-TX Verification',
+                    amount: '0.00 USDT',
+                    asset: 'Compliance Audit',
+                    time: '10 mins ago',
+                    status: 'Passed',
+                    statusClass: 'text-cass-cyan'
+                }
+            ];
+
+            updateUI();
+
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+            document.getElementById('headerUserArea').classList.remove('hidden');
+            document.getElementById('headerUserArea').classList.add('flex');
+        }
+
+        function logout() {
+            currentUser = '';
+            currentBalance = 87826.00;
+            transactions = [];
+
+            document.getElementById('inputUsername').value = '';
+            document.getElementById('inputIncidentId').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('headerUserArea').classList.add('hidden');
+            document.getElementById('headerUserArea').classList.remove('flex');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        function updateUI() {
+            document.getElementById('welcomeName').textContent = currentUser;
+            document.getElementById('displayHeaderUser').textContent = currentUser;
+            
+            document.getElementById('displayBalance').textContent = currentBalance.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            const eurApprox = currentBalance * 0.92;
+            document.getElementById('eurBalance').textContent = eurApprox.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            renderTransactions();
+        }
+
+        function renderTransactions() {
+            const tableBody = document.getElementById('txHistoryTable');
+            tableBody.innerHTML = '';
+
+            transactions.forEach(tx => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-900/50 transition-colors';
+                row.innerHTML = `
+                    <td class="p-3.5 font-medium text-white">${tx.type}</td>
+                    <td class="p-3.5 font-bold">${tx.amount}</td>
+                    <td class="p-3.5">${tx.asset}</td>
+                    <td class="p-3.5 text-gray-500">${tx.time}</td>
+                    <td class="p-3.5 text-right font-medium ${tx.statusClass}">${tx.status}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function openModal(action) {
+            const modal = document.getElementById('actionModal');
+            document.getElementById('modalAmount').value = currentBalance;
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('actionModal').classList.add('hidden');
+        }
+
+        function handleModalSubmit(event) {
+            event.preventDefault();
+            const amount = parseFloat(document.getElementById('modalAmount').value) || 0;
+            if (amount <= 0 || amount > currentBalance) {
+                alert('Invalid transfer amount.');
+                return;
+            }
+
+            const timeNow = new Date().toLocaleTimeString();
+            currentBalance -= amount;
+            
+            transactions.unshift({
+                type: 'Outbound Vault Transfer',
+                amount: `-${amount.toLocaleString('en-US', {minimumFractionDigits: 2})} USDT`,
+                asset: 'USDT (TRC20)',
+                time: timeNow,
+                status: 'Processing',
+                statusClass: 'text-cass-cyan'
+            });
+
+            updateUI();
+            closeModal();
+        }
+    </script>
+</body>
+</html>
